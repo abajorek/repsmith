@@ -42,6 +42,12 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/notation/<path:filename>')
+def serve_notation(filename):
+    """Serve uploaded HTML notation files."""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
     """
@@ -70,6 +76,8 @@ def upload_files():
                 song_data = parser.parse_file(filepath)
                 song_data['filename'] = filename
                 song_data['filepath'] = filepath
+                # Store just filename for notation reference (for serving via /notation/<filename>)
+                song_data['notation_reference'] = filename
                 parsed_songs.append(song_data)
             except Exception as e:
                 errors.append({

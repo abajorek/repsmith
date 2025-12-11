@@ -187,12 +187,19 @@ function displaySongs(songs) {
 
     songs.forEach(song => {
         const row = tbody.insertRow();
+        const notationLink = song.notation_reference
+            ? `<a href="/notation/${song.notation_reference}" target="_blank" class="text-green-600 hover:text-green-800 mr-2" title="View notation">
+                <i class="fas fa-music"></i> Notation
+               </a>`
+            : '';
+
         row.innerHTML = `
             <td class="px-4 py-2 border">${song.title}</td>
             <td class="px-4 py-2 border">${song.tone_set || '-'}</td>
             <td class="px-4 py-2 border">${song.game_type || '-'}</td>
             <td class="px-4 py-2 border">${song.tempo || '-'}</td>
             <td class="px-4 py-2 border">
+                ${notationLink}
                 <button onclick="viewSong(${song.id})" class="text-blue-600 hover:text-blue-800 mr-2">
                     <i class="fas fa-eye"></i> View
                 </button>
@@ -358,8 +365,12 @@ async function viewSong(songId) {
 
             ${song.notation_reference ? `
                 <div class="mt-4">
-                    <h3 class="font-bold text-gray-700">Notation</h3>
-                    <p class="mt-2 text-sm text-gray-600">Original file: ${song.notation_reference}</p>
+                    <h3 class="font-bold text-gray-700">Musical Notation</h3>
+                    <p class="mt-2 text-sm text-gray-600 mb-3">View the original notation with stick notation, rhythms, and solfege syllables.</p>
+                    <a href="/notation/${song.notation_reference.split('/').pop()}" target="_blank"
+                       class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-music mr-2"></i>View Original Notation
+                    </a>
                 </div>
             ` : ''}
         `;
