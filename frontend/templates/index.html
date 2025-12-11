@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RepSmith - Kodály Repertoire Analysis Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold">RepSmith</h1>
+                    <p class="text-blue-100">Kodály Repertoire Analysis Tool</p>
+                </div>
+                <div class="flex space-x-4">
+                    <button onclick="exportCSV()" class="bg-white text-blue-600 px-4 py-2 rounded hover:bg-blue-50">
+                        <i class="fas fa-download mr-2"></i>Export CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white shadow">
+        <div class="container mx-auto px-4">
+            <div class="flex space-x-4">
+                <button onclick="switchTab('import')" class="tab-btn px-6 py-4 font-semibold text-gray-700 hover:bg-gray-100 active" data-tab="import">
+                    <i class="fas fa-upload mr-2"></i>Import
+                </button>
+                <button onclick="switchTab('browse')" class="tab-btn px-6 py-4 font-semibold text-gray-700 hover:bg-gray-100" data-tab="browse">
+                    <i class="fas fa-music mr-2"></i>Browse Songs
+                </button>
+                <button onclick="switchTab('dashboard')" class="tab-btn px-6 py-4 font-semibold text-gray-700 hover:bg-gray-100" data-tab="dashboard">
+                    <i class="fas fa-chart-bar mr-2"></i>Dashboard
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+
+        <!-- Import Tab -->
+        <div id="import-tab" class="tab-content active">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-4">Import Songs from HTML</h2>
+                <p class="text-gray-600 mb-6">Upload HTML files from mysongcollection.com to parse and import songs.</p>
+
+                <!-- File Upload Area -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-6">
+                    <input type="file" id="fileInput" multiple accept=".html,.htm" class="hidden" onchange="handleFileSelect(event)">
+                    <label for="fileInput" class="cursor-pointer">
+                        <i class="fas fa-cloud-upload-alt text-6xl text-blue-500 mb-4"></i>
+                        <p class="text-lg font-semibold text-gray-700">Drag & drop HTML files here</p>
+                        <p class="text-gray-500 mt-2">or click to browse</p>
+                    </label>
+                </div>
+
+                <!-- Upload Button -->
+                <button id="uploadBtn" onclick="uploadFiles()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fas fa-upload mr-2"></i>Parse Files
+                </button>
+
+                <!-- Preview Area -->
+                <div id="previewArea" class="mt-8 hidden">
+                    <h3 class="text-xl font-bold mb-4">Preview Parsed Songs</h3>
+                    <p class="text-gray-600 mb-4">Review and edit the extracted data before saving to database.</p>
+
+                    <div class="overflow-x-auto mb-4">
+                        <table class="min-w-full bg-white border border-gray-300">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-2 border">Title</th>
+                                    <th class="px-4 py-2 border">Tone Set</th>
+                                    <th class="px-4 py-2 border">Game Type</th>
+                                    <th class="px-4 py-2 border">Tempo</th>
+                                    <th class="px-4 py-2 border">Starting Pitch</th>
+                                    <th class="px-4 py-2 border">Warnings</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button onclick="saveAllSongs()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-save mr-2"></i>Save All to Database
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Browse Tab -->
+        <div id="browse-tab" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-2xl font-bold mb-4">Browse & Search Songs</h2>
+
+                <!-- Search & Filter -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+                        <input type="text" id="searchInput" placeholder="Title, lyrics, keywords..."
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               onkeyup="searchSongs()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Tone Set</label>
+                        <input type="text" id="toneSetFilter" placeholder="e.g., s-m, d-r-m"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               onchange="filterSongs()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Game Type</label>
+                        <input type="text" id="gameTypeFilter" placeholder="e.g., circle game"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               onchange="filterSongs()">
+                    </div>
+                </div>
+
+                <button onclick="filterSongs()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 mb-6">
+                    <i class="fas fa-filter mr-2"></i>Apply Filters
+                </button>
+                <button onclick="clearFilters()" class="bg-gray-400 text-white px-6 py-2 rounded-lg hover:bg-gray-500 mb-6 ml-2">
+                    <i class="fas fa-times mr-2"></i>Clear Filters
+                </button>
+
+                <!-- Results Count -->
+                <div id="resultsCount" class="text-gray-600 mb-4"></div>
+
+                <!-- Song List -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-300">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 border cursor-pointer hover:bg-gray-200" onclick="sortBy('title')">
+                                    Title <i class="fas fa-sort text-gray-400"></i>
+                                </th>
+                                <th class="px-4 py-2 border cursor-pointer hover:bg-gray-200" onclick="sortBy('tone_set')">
+                                    Tone Set <i class="fas fa-sort text-gray-400"></i>
+                                </th>
+                                <th class="px-4 py-2 border cursor-pointer hover:bg-gray-200" onclick="sortBy('game_type')">
+                                    Game Type <i class="fas fa-sort text-gray-400"></i>
+                                </th>
+                                <th class="px-4 py-2 border cursor-pointer hover:bg-gray-200" onclick="sortBy('tempo')">
+                                    Tempo <i class="fas fa-sort text-gray-400"></i>
+                                </th>
+                                <th class="px-4 py-2 border">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="songListBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div id="pagination" class="flex justify-center items-center mt-6 space-x-2"></div>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6">Repertoire Analytics</h2>
+
+                <!-- Stats Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-blue-50 rounded-lg p-6">
+                        <h3 class="text-sm font-semibold text-blue-600 mb-2">Total Songs</h3>
+                        <p id="totalSongs" class="text-3xl font-bold text-blue-900">0</p>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-6">
+                        <h3 class="text-sm font-semibold text-green-600 mb-2">Tone Sets</h3>
+                        <p id="uniqueToneSets" class="text-3xl font-bold text-green-900">0</p>
+                    </div>
+                    <div class="bg-purple-50 rounded-lg p-6">
+                        <h3 class="text-sm font-semibold text-purple-600 mb-2">Game Types</h3>
+                        <p id="uniqueGameTypes" class="text-3xl font-bold text-purple-900">0</p>
+                    </div>
+                    <div class="bg-orange-50 rounded-lg p-6">
+                        <h3 class="text-sm font-semibold text-orange-600 mb-2">Sources</h3>
+                        <p id="uniqueSources" class="text-3xl font-bold text-orange-900">0</p>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Tone Set Distribution -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h3 class="text-lg font-bold mb-4">Tone Set Distribution</h3>
+                        <div id="toneSetChart" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Game Type Distribution -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h3 class="text-lg font-bold mb-4">Game Type Distribution</h3>
+                        <div id="gameTypeChart" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Tempo Distribution -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h3 class="text-lg font-bold mb-4">Tempo Distribution</h3>
+                        <div id="tempoChart" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Source Distribution -->
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h3 class="text-lg font-bold mb-4">Top Sources</h3>
+                        <div id="sourceChart" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- Gap Analysis -->
+                <div class="mt-8 bg-yellow-50 rounded-lg p-6">
+                    <h3 class="text-lg font-bold mb-4">Repertoire Gaps</h3>
+                    <div id="gapAnalysis" class="space-y-2 text-gray-700"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Song Detail Modal -->
+    <div id="songModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <h2 id="modalTitle" class="text-2xl font-bold"></h2>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div id="modalContent" class="space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
